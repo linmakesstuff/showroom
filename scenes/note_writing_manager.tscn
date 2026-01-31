@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://cn1ta274m1to3"]
+
+[ext_resource type="Script" uid="uid://80xyif7r8c68" path="res://scripts/note_writing_manager.gd" id="1_qkncl"]
+
+[node name="NoteWritingManager" type="Node" unique_id=1988129591]
+script = ExtResource("1_qkncl")
+
+[node name="Control" type="Control" parent="." unique_id=1976588195]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="Control" unique_id=974931738]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+fit_content = true
+scroll_following = true
