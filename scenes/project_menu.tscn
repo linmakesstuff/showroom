@@ -1,0 +1,118 @@
+[gd_scene format=3 uid="uid://cumq7rku7nmpk"]
+
+[ext_resource type="Script" uid="uid://bskhc8j7xky51" path="res://scripts/project_menu.gd" id="1_02vlr"]
+[ext_resource type="PackedScene" uid="uid://cn1ta274m1to3" path="res://scenes/note_writing_manager.tscn" id="2_l3cen"]
+
+[node name="project_menu" type="Control" unique_id=891042751]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_02vlr")
+note_writing_manager = ExtResource("2_l3cen")
+
+[node name="createbutton" type="Button" parent="." unique_id=983291479]
+layout_mode = 0
+offset_right = 78.0
+offset_bottom = 57.0
+text = "Create
+"
+
+[node name="FileHolder" type="VBoxContainer" parent="." unique_id=1887417237]
+layout_mode = 0
+offset_top = 64.0
+offset_right = 233.0
+offset_bottom = 648.0
+
+[node name="New File Prompt" type="Control" parent="." unique_id=2026965988]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="File Prompt BG" type="ColorRect" parent="New File Prompt" unique_id=172696928]
+layout_mode = 0
+offset_left = 783.0
+offset_top = 427.0
+offset_right = 1117.0
+offset_bottom = 609.0
+color = Color(0.47843137, 0.47843137, 0.47843137, 1)
+
+[node name="NotesButton" type="Button" parent="New File Prompt" unique_id=1243568820]
+layout_mode = 0
+offset_left = 790.0
+offset_top = 539.0
+offset_right = 889.0
+offset_bottom = 586.231
+text = "Notes"
+
+[node name="SBButton" type="Button" parent="New File Prompt" unique_id=944528603]
+layout_mode = 0
+offset_left = 904.0
+offset_top = 541.0
+offset_right = 1007.0
+offset_bottom = 587.0
+text = "Storyboards"
+
+[node name="DesignButton" type="Button" parent="New File Prompt" unique_id=1493970571]
+layout_mode = 0
+offset_left = 1023.0
+offset_top = 541.0
+offset_right = 1111.0
+offset_bottom = 587.0
+text = "Designs"
+
+[node name="Select Your Style" type="Label" parent="New File Prompt" unique_id=161100017]
+layout_mode = 0
+offset_left = 888.0
+offset_top = 452.0
+offset_right = 1016.0
+offset_bottom = 501.0
+text = "Select Your Style
+(Designs WIP)"
+horizontal_alignment = 1
+
+[node name="Enter A Name Prompt" type="Control" parent="." unique_id=698887202]
+visible = false
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="EANBG" type="ColorRect" parent="Enter A Name Prompt" unique_id=1570857042]
+layout_mode = 0
+offset_left = 782.0
+offset_top = 229.0
+offset_right = 1116.0
+offset_bottom = 411.0
+color = Color(0.47843137, 0.47843137, 0.47843137, 1)
+
+[node name="EANButton" type="Button" parent="Enter A Name Prompt" unique_id=1809713686]
+layout_mode = 0
+offset_left = 1033.0
+offset_top = 351.0
+offset_right = 1091.0
+offset_bottom = 393.0
+text = "Ok"
+
+[node name="EANText" type="TextEdit" parent="Enter A Name Prompt" unique_id=1341957921]
+layout_mode = 0
+offset_left = 807.0
+offset_top = 354.0
+offset_right = 1022.0
+offset_bottom = 391.0
+
+[node name="Enter A Name" type="Label" parent="Enter A Name Prompt" unique_id=1811361794]
+layout_mode = 0
+offset_left = 896.0
+offset_top = 270.0
+offset_right = 1003.0
+offset_bottom = 293.0
+text = "Enter A Name"
+
+[connection signal="pressed" from="createbutton" to="." method="_on_createbutton_pressed"]
+[connection signal="pressed" from="New File Prompt/NotesButton" to="." method="_on_notes_button_pressed"]
+[connection signal="pressed" from="New File Prompt/SBButton" to="." method="_on_sb_button_pressed"]
+[connection signal="pressed" from="New File Prompt/DesignButton" to="." method="_on_design_button_pressed"]
+[connection signal="pressed" from="Enter A Name Prompt/EANButton" to="." method="_on_ean_button_pressed"]

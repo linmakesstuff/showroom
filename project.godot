@@ -15,12 +15,14 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Showroom"
+run/main_scene="uid://cgvydtpvjk3sn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 Datasaver="*uid://bi10yf6deaqn3"
+SceneSwitcher="*uid://gogqq827w8ol"
 
 [input]
 

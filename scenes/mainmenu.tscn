@@ -1,0 +1,69 @@
+[gd_scene format=3 uid="uid://cgvydtpvjk3sn"]
+
+[ext_resource type="Script" uid="uid://c3nqcqrl8p8up" path="res://scripts/mainmenu.gd" id="1_5mbse"]
+[ext_resource type="PackedScene" uid="uid://cumq7rku7nmpk" path="res://scenes/project_menu.tscn" id="2_natt5"]
+
+[node name="Mainmenu" type="Control" unique_id=85248604]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_5mbse")
+project_menu = ExtResource("2_natt5")
+
+[node name="projectbox" type="BoxContainer" parent="." unique_id=851093333]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 125.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+vertical = true
+
+[node name="CreateButton" type="Button" parent="." unique_id=639055445]
+layout_mode = 0
+offset_right = 84.0
+offset_bottom = 55.0
+text = "Create"
+
+[node name="New Project Prompt" type="Control" parent="." unique_id=849464656]
+visible = false
+anchors_preset = 0
+
+[node name="NewProjectBG" type="ColorRect" parent="New Project Prompt" unique_id=1538326817]
+layout_mode = 0
+offset_left = 345.0
+offset_top = 149.0
+offset_right = 626.0
+offset_bottom = 315.0
+color = Color(0.47788018, 0.47788012, 0.47788012, 1)
+
+[node name="OkButton" type="Button" parent="New Project Prompt" unique_id=1885483034]
+layout_mode = 0
+offset_left = 543.0
+offset_top = 248.0
+offset_right = 593.0
+offset_bottom = 281.0
+text = "Ok"
+
+[node name="PleaseName" type="Label" parent="New Project Prompt" unique_id=1510809776]
+layout_mode = 0
+offset_left = 365.0
+offset_top = 167.0
+offset_right = 604.0
+offset_bottom = 190.0
+text = "Please Name Your New Project"
+
+[node name="NewProjectText" type="TextEdit" parent="New Project Prompt" unique_id=989743396]
+layout_mode = 0
+offset_left = 362.0
+offset_top = 239.0
+offset_right = 513.0
+offset_bottom = 289.0
+
+[connection signal="pressed" from="CreateButton" to="." method="_on_create_button_pressed"]
+[connection signal="pressed" from="New Project Prompt/OkButton" to="." method="_on_ok_button_pressed"]
