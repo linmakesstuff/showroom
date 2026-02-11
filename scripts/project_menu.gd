@@ -60,7 +60,10 @@ func save_data(res_name):
 			ResourceSaver.save(data, current_folder + "/" + selected_type + "/" + res_name + ".tres")
 			path_to_data = res_name + ".tres"
 		"storyboards":
-			pass
+			var data = sbres.new()
+			data.file_name = res_name
+			data.size
+			data.type = "storyboards"
 		"designs":
 			pass
 	create_button(selected_type, path_to_data)

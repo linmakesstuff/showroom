@@ -28,9 +28,12 @@ offset_bottom = 648.0
 
 [node name="New File Prompt" type="Control" parent="." unique_id=2026965988]
 visible = false
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="File Prompt BG" type="ColorRect" parent="New File Prompt" unique_id=172696928]
 layout_mode = 0
@@ -76,9 +79,12 @@ horizontal_alignment = 1
 
 [node name="Enter A Name Prompt" type="Control" parent="." unique_id=698887202]
 visible = false
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="EANBG" type="ColorRect" parent="Enter A Name Prompt" unique_id=1570857042]
 layout_mode = 0
@@ -110,6 +116,52 @@ offset_top = 270.0
 offset_right = 1003.0
 offset_bottom = 293.0
 text = "Enter A Name"
+
+[node name="Storyboard Prompts" type="Control" parent="." unique_id=857305034]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="Storyboard Prompts" unique_id=1773536390]
+layout_mode = 0
+offset_left = 541.0
+offset_top = 264.0
+offset_right = 737.0
+offset_bottom = 446.0
+color = Color(0.47843137, 0.47843137, 0.47843137, 1)
+
+[node name="TextEdit" type="TextEdit" parent="Storyboard Prompts" unique_id=1894022527]
+layout_mode = 0
+offset_left = 550.0
+offset_top = 300.0
+offset_right = 602.0
+offset_bottom = 328.0
+
+[node name="TextEdit2" type="TextEdit" parent="Storyboard Prompts" unique_id=1800396449]
+layout_mode = 0
+offset_left = 551.0
+offset_top = 340.0
+offset_right = 603.0
+offset_bottom = 368.0
+
+[node name="Label" type="Label" parent="Storyboard Prompts" unique_id=250424998]
+layout_mode = 0
+offset_left = 616.0
+offset_top = 302.0
+offset_right = 666.0
+offset_bottom = 325.0
+text = "height"
+
+[node name="Label2" type="Label" parent="Storyboard Prompts" unique_id=1561954633]
+layout_mode = 0
+offset_left = 618.0
+offset_top = 343.0
+offset_right = 662.0
+offset_bottom = 366.0
+text = "width"
 
 [connection signal="pressed" from="createbutton" to="." method="_on_createbutton_pressed"]
 [connection signal="pressed" from="New File Prompt/NotesButton" to="." method="_on_notes_button_pressed"]
