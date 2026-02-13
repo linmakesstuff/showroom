@@ -20,13 +20,26 @@ var img: Image
 
 func _ready() -> void:
 	centered = false
-	texture = ImageTexture.new()
-	#images is the colors that go on the canvas, texture is the canvas (i think)
-	img = Image.create_empty(width, height, false, Image.FORMAT_RGBA8)
-	img.fill(Color.CORNFLOWER_BLUE)
-	#Needs to be set first
-	texture.set_image(img)
-	
+	if SceneSwitcher.new_arg != null:
+		var data = load(SceneSwitcher.new_arg)
+		load_data(data)
+
+
+func load_data(data):
+	if data.frames.is_empty():
+		texture = ImageTexture.new()
+		img = Image.create_empty(data.size.x, data.size.y, false, Image.FORMAT_RGBA8)
+		img.fill(Color.WHITE)
+		texture.set_image(img)
+	else:
+		pass
+
+func save_data():
+	pass
+
+func save_stroke(new_stroke):
+	undo.append(new_stroke)
+
 func _input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("left_click"):
 				print("new stroke created")
@@ -66,9 +79,6 @@ func _input(event: InputEvent) -> void:
 		if redo.size() > 0:
 			pass
 
-func save_stroke(stroke):
-	undo.append(stroke)
-
 func _process(_delta: float) -> void:
 	if dirty:
 		update_canvas()
@@ -96,16 +106,14 @@ func _on_storyboard_manager_create_new_layer() -> void:
 
 class layers:
 	var index: int
+	var texture: ImageTexture
 	var vis: bool
 	var opacity: float
 	var name: String
-
 class stroke:
 	var path: PackedVector2Array
 	var color: Color
 	var brush_size: float
 	var layer_id: int
-	
-
-
-	
+class frame:
+	var layers: Array = []
