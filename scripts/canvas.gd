@@ -14,9 +14,6 @@ var dirty = false
 var all_layers := {}
 var current_layer
 
-var undo = []
-var redo = []
-
 var current_stroke
 var last_point = null
 
@@ -47,13 +44,12 @@ func save_data():
 	pass
 
 func save_stroke(new_stroke):
-	undo.append(new_stroke)
-	for i in undo:
-		print(i.path)
+	current_layer.undos.append(new_stroke)
+	print(current_layer.undos)
 
 func _input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("left_click"):
-		print("painting on: " + str(current_layer))
+		#print("painting on: " + str(current_layer))
 		current_stroke = stroke.new()
 			
 		current_stroke.brush_size = current_bs
@@ -61,6 +57,9 @@ func _input(event: InputEvent) -> void:
 
 	if event is InputEventMouseMotion:
 		if event.button_mask == MOUSE_BUTTON_MASK_LEFT:
+			if current_layer.redos.size() > 0:
+				current_layer.redos.clear()
+			
 			var mouse_pos = get_global_mouse_position()
 			var lpos = to_local(mouse_pos)
 			
@@ -77,28 +76,37 @@ func _input(event: InputEvent) -> void:
 					var interp = last_point.lerp(lpos, t)
 					if current_stroke != null:
 						current_stroke.path.append(interp)
-					paint_canvas(interp)
+					paint_canvas(interp, current_color)
 				last_point = lpos
 		
 	if Input.is_action_just_released("left_click"):
 		last_point = null
-		save_stroke(current_stroke)
+		if current_stroke != null and current_stroke.path.size() > 0:
+			save_stroke(current_stroke)
 
 	if Input.is_action_just_pressed("undo"):
-		if undo.size() > 0:
-			undo.remove_at(-1)
+		undo_strokes()
 	if Input.is_action_just_pressed("redo"):
-		if redo.size() > 0:
-			pass
+		pass
+
+func undo_strokes():
+	current_img.fill(Color.TRANSPARENT)
+	current_layer.redos.append(current_layer.undos[-1])
+	current_layer.undos.remove_at(-1)
+	for i in current_layer.undos:
+		#i.path, i.color
+		for j in i.path:
+			current_img.fill_rect(Rect2i(j, Vector2i(1,1)).grow(current_bs), current_color)
+	update_canvas()
 
 func _process(_delta: float) -> void:
 	if dirty:
 		update_canvas()
 		dirty = false
 
-func paint_canvas(pos):
+func paint_canvas(pos: Vector2, color: Color):
 	var ipos = Vector2i(pos)
-	current_img.fill_rect(Rect2i(ipos, Vector2i(1,1)).grow(current_bs), current_color)
+	current_img.fill_rect(Rect2i(ipos, Vector2i(1,1)).grow(current_bs), color)
 	dirty = true
 
 func update_canvas():
