@@ -1,0 +1,125 @@
+[gd_scene format=3 uid="uid://bhe4ap5aano0r"]
+
+[ext_resource type="Script" uid="uid://bjjdn21n4h5gy" path="res://scripts/storyboard_manager.gd" id="1_1qvom"]
+[ext_resource type="Script" uid="uid://dcgfgf2mh4kir" path="res://scripts/ui_elements.gd" id="2_4u48o"]
+[ext_resource type="Script" uid="uid://dv0wylghex52j" path="res://scripts/canvas.gd" id="3_ksons"]
+
+[sub_resource type="GDScript" id="GDScript_2hjur"]
+
+[node name="storyboard_manager2" type="Control" unique_id=609297543]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_1qvom")
+
+[node name="camera" type="Camera2D" parent="." unique_id=1487631285]
+position = Vector2(576, 324)
+
+[node name="ui_elements" type="CanvasLayer" parent="." unique_id=1005617642]
+script = ExtResource("2_4u48o")
+
+[node name="ui_control" type="Control" parent="ui_elements" unique_id=1480625173]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="ui_elements/ui_control" unique_id=1010500]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -128.0
+offset_top = -341.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="ui_elements/ui_control/PanelContainer" unique_id=1640475150]
+layout_mode = 2
+
+[node name="layer_holder" type="VBoxContainer" parent="ui_elements/ui_control/PanelContainer/MarginContainer" unique_id=1591644305]
+layout_mode = 2
+
+[node name="new_folder_button" type="Button" parent="ui_elements/ui_control" unique_id=1118487121]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 0.45000002
+anchor_right = 1.0
+anchor_bottom = 0.45000002
+offset_left = -18.0
+offset_top = -15.600006
+offset_bottom = 15.399994
+grow_horizontal = 0
+grow_vertical = 2
+text = "+"
+
+[node name="current_display" type="Label" parent="ui_elements/ui_control" unique_id=1004363977]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 0.397
+anchor_right = 1.0
+anchor_bottom = 0.397
+offset_left = -122.0
+offset_top = -11.256012
+offset_right = -21.0
+offset_bottom = 11.743988
+text = "Current: "
+
+[node name="forward_frame_button" type="Button" parent="ui_elements/ui_control" unique_id=1378373705]
+layout_mode = 0
+offset_left = 1089.0
+offset_top = 211.0
+offset_right = 1107.0
+offset_bottom = 242.0
+text = ">"
+
+[node name="backward_frame_button" type="Button" parent="ui_elements/ui_control" unique_id=1102932261]
+layout_mode = 0
+offset_left = 1029.0
+offset_top = 212.0
+offset_right = 1047.0
+offset_bottom = 243.0
+text = "<"
+
+[node name="frame_index_display" type="Label" parent="ui_elements/ui_control" unique_id=510755234]
+layout_mode = 0
+offset_left = 1050.0
+offset_top = 214.0
+offset_right = 1090.0
+offset_bottom = 237.0
+horizontal_alignment = 1
+
+[node name="frame_delete_button" type="Button" parent="ui_elements/ui_control" unique_id=258036564]
+layout_mode = 0
+offset_left = 1115.0
+offset_top = 215.0
+offset_right = 1145.0
+offset_bottom = 246.0
+text = "🗑️"
+
+[node name="layer_delete_button" type="Button" parent="ui_elements/ui_control" unique_id=960553067]
+layout_mode = 0
+offset_left = 1104.0
+offset_top = 276.0
+offset_right = 1134.0
+offset_bottom = 307.0
+text = "🗑️"
+
+[node name="canvas" type="Sprite2D" parent="." unique_id=843692867]
+frame = SubResource("GDScript_2hjur")
+script = ExtResource("3_ksons")
+
+[node name="canvas_holder" type="Node2D" parent="." unique_id=1686868981]
+
+[node name="selection_sprite" type="Sprite2D" parent="canvas_holder" unique_id=340991360]
+
+[connection signal="pressed" from="ui_elements/ui_control/new_folder_button" to="." method="_on_new_folder_button_pressed"]
+[connection signal="pressed" from="ui_elements/ui_control/forward_frame_button" to="." method="_on_forward_frame_button_pressed"]
+[connection signal="pressed" from="ui_elements/ui_control/backward_frame_button" to="." method="_on_backward_frame_button_pressed"]
