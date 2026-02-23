@@ -6,6 +6,7 @@ signal create_new_layer
 #ONREADY VARIABLES
 @onready var cam = $camera
 @onready var canvas = $canvas
+@onready var selection_canvas = $canvas_holder/selection_sprite
 @onready var canvas_holder = $canvas_holder
 @onready var ui_elements = $ui_elements
 @onready var layer_holder = $ui_elements/ui_control/PanelContainer/MarginContainer/layer_holder
@@ -19,11 +20,14 @@ var min_zoom = 0.1
 
 var bg_sprite = Sprite2D
 
+var action_history = []
+
 #TOOL VARIABLES
 enum tools {
 	BRUSH,
 	ERASER,
-	SELECT}
+	SELECT,
+	FILL}
 var dirty = false
 var current_tool
 var current_bs = 3
@@ -37,6 +41,7 @@ var frame_index = 0
 var current_layer
 
 #STROKE VARIABLES
+var current_select
 var current_stroke
 var last_point = null
 
@@ -67,6 +72,7 @@ func load_data(data):
 		
 		#Create Background Texture and Images
 		bg_sprite = Sprite2D.new()
+		bg_sprite.centered = false
 		var texture = ImageTexture.new()
 		var image = Image.create_empty(width, height, false, Image.FORMAT_RGBA8)
 		image.fill(Color.WHITE)
@@ -116,11 +122,13 @@ func _input(event: InputEvent) -> void:
 						#Find tool type
 						if current_tool == tools.BRUSH:
 							current_stroke.path.append(interp)
+							action_history.append(current_stroke)
 							canvas.paint_canvas(interp, current_color, current_bs)
 						if current_tool == tools.SELECT:
 							select_path.append(interp)
 						if current_tool == tools.ERASER:
 							current_stroke.path.append(interp)
+							action_history.append(current_stroke)
 							canvas.paint_canvas(interp, Color.TRANSPARENT, current_es)
 					last_point = lpos
 
@@ -145,7 +153,7 @@ func _input(event: InputEvent) -> void:
 		)
 			cam.zoom = new_zoom
 		
-		if Input.is_action_just_pressed("left_click"):
+		if event.is_action_pressed("left_click"):
 			if !is_drawing and current_tool == tools.BRUSH:
 				select_path.clear()
 				is_drawing = true
@@ -153,7 +161,11 @@ func _input(event: InputEvent) -> void:
 				current_stroke = stroke.new()
 				current_stroke.brush_size = current_bs
 				current_stroke.color = current_color
-		if Input.is_action_just_released("left_click"):
+			if !is_drawing and current_tool == tools.SELECT:
+				is_drawing = true
+				var data = select.new()
+
+		if event.is_action_released("left_click"):
 			is_drawing = false
 			last_point = null
 			if current_stroke != null and current_stroke.path.size() > 0:
@@ -161,25 +173,40 @@ func _input(event: InputEvent) -> void:
 			if current_tool == tools.SELECT and select_path.size() > 0:
 				select_path.append(select_path[0])
 				create_select(select_path)
+			else:
+				print("**********")
+				print(current_tool)
+				print(select_path)
+				print("**********")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("undo"):
+		print("yeah you pressed undo")
+		undo_action()
+
+	if event.is_action_pressed("change_brush_temp"):
+		current_tool = tools.SELECT
 
 #UNDO REDO ACTIONS
 
-#func undo_strokes():
-	#current_img.fill(Color.TRANSPARENT)
-	#current_layer.redos.append(current_layer.undos[-1])
-	#current_layer.undos.remove_at(-1)
-	#for i in current_layer.undos:
-		##i.path, i.color
-		#for j in i.path:
-			#current_img.fill_rect(Rect2i(j, Vector2i(1,1)).grow(current_bs), current_color)
-	#canvas.update_canvas()
+func undo_action():
+	var type = typeof(action_history[-1])
+	if type:
+		print(type)
+	else:
+		print("typeof sucks")
+	
 
-func redo_strokes():
-	current_layer.undos.append(current_layer.redos[-1])
-	for i in current_layer.redos:
-		for j in i.path:
-			canvas.paint_canvas(j, i.color, i.brush_size)
-	current_layer.redos.remove_at(-1)
+func redo_action():
+	match current_tool:
+		tools.BRUSH:
+			pass
+		tools.ERASER:
+			pass
+		tools.SELECT:
+			pass
+		tools.FILL:
+			pass
 
 #CREATION
 
@@ -200,6 +227,7 @@ func create_button(data):
 	layer_holder.add_child(new_button)
 
 func create_select(path):
+	print("create select started")
 	var minx = path[0].x
 	var maxx = path[0].x
 	var miny = path[0].y
@@ -213,26 +241,27 @@ func create_select(path):
 	var bounds = Rect2(
 		Vector2i(minx, miny),
 		Vector2i(maxx - minx, maxy - miny))
-	
-	#var src_img = current_img
-	#var selection_image = Image.create(bounds.size.x, bounds.size.y, false, Image.FORMAT_RGBA8)
+
+	var pos = bounds.get_center()
+	var src_img = canvas.current_layer.image
+	#Not sure if this will be needed in the long run
+	var selection_image = selection_canvas.create_new_selection(bounds.size.x, bounds.size.y)
 	
 	for x in range(bounds.position.x, bounds.position.x + bounds.size.x):
 		for y in range(bounds.position.y, bounds.position.y + bounds.size.y):
 			var point = Vector2(x, y)
 			
 			if Geometry2D.is_point_in_polygon(point, path):
-				pass
-				#var color = src_img.get_pixel(x, y)
-				#selection_image.set_pixel(x - bounds.position.x, y - bounds.position.y, color)
+				var color = src_img.get_pixel(x, y)
+				selection_canvas.image.set_pixel(x - bounds.position.x, y - bounds.position.y, color)
 	
-	#selection_img = selection_image
-	#selection_position = Vector2(bounds.size.x, bounds.size.y)
-	#is_selecting = true
-	#selection_tex = ImageTexture.create_from_image(selection_img)
-	#selection_sprite.texture = selection_tex
-	##broken
-	#selection_sprite.position = selection_position
+	var variables = selection_canvas.get_variables()
+	selection_image = variables[0]
+	selection_tex = variables[1]
+	selection_position = pos
+	is_selecting = true
+	selection_canvas.position = selection_position
+	
 
 func create_layer():
 	var current_frame = all_frames[frame_index]
@@ -327,6 +356,10 @@ class stroke:
 		path = PackedVector2Array()
 class frame:
 	var layers: Array = []
+class select:
+	var select_path: Array = []
+class bucker_fill:
+	var color: Color
 
 #Camera and action input. > Self
 #Drawing and Visual rep > In the canvas sprite2d

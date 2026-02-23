@@ -3,7 +3,7 @@ extends Control
 #Scene References
 @export var note_writing_manager: PackedScene = preload("res://scenes/note_writing_manager.tscn")
 #Storyboard Manager
-@export var storyboard_writing_manager: PackedScene = preload("res://scenes/storyboard_manager.tscn")
+@export var storyboard_writing_manager: PackedScene = preload("res://scenes/storyboard_manager_2.tscn")
 
 #Design Manager
 

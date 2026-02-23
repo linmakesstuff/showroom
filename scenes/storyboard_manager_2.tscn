@@ -3,8 +3,9 @@
 [ext_resource type="Script" uid="uid://bjjdn21n4h5gy" path="res://scripts/storyboard_manager.gd" id="1_1qvom"]
 [ext_resource type="Script" uid="uid://dcgfgf2mh4kir" path="res://scripts/ui_elements.gd" id="2_4u48o"]
 [ext_resource type="Script" uid="uid://dv0wylghex52j" path="res://scripts/canvas.gd" id="3_ksons"]
+[ext_resource type="Script" uid="uid://b76fgr1fvj2ib" path="res://scripts/selection_sprite.gd" id="4_4u48o"]
 
-[sub_resource type="GDScript" id="GDScript_2hjur"]
+[sub_resource type="GDScript" id="GDScript_4u48o"]
 
 [node name="storyboard_manager2" type="Control" unique_id=609297543]
 layout_mode = 3
@@ -113,12 +114,13 @@ offset_bottom = 307.0
 text = "🗑️"
 
 [node name="canvas" type="Sprite2D" parent="." unique_id=843692867]
-frame = SubResource("GDScript_2hjur")
+frame = SubResource("GDScript_4u48o")
 script = ExtResource("3_ksons")
 
 [node name="canvas_holder" type="Node2D" parent="." unique_id=1686868981]
 
 [node name="selection_sprite" type="Sprite2D" parent="canvas_holder" unique_id=340991360]
+script = ExtResource("4_4u48o")
 
 [connection signal="pressed" from="ui_elements/ui_control/new_folder_button" to="." method="_on_new_folder_button_pressed"]
 [connection signal="pressed" from="ui_elements/ui_control/forward_frame_button" to="." method="_on_forward_frame_button_pressed"]
