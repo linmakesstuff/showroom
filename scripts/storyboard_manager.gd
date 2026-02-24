@@ -52,9 +52,14 @@ var is_selecting = false
 var selection_tex
 var select_path: Array = []
 
+var copy_img
+var copy_pos
+
 #INITALIZATION
 
 func _ready() -> void:
+	selection_canvas.z_index = 100
+	selection_canvas.centered = false
 	if SceneSwitcher.new_arg != null:
 		var data = load(SceneSwitcher.new_arg)
 		load_data(data)
@@ -122,15 +127,17 @@ func _input(event: InputEvent) -> void:
 						#Find tool type
 						if current_tool == tools.BRUSH:
 							current_stroke.path.append(interp)
-							action_history.append(current_stroke)
 							canvas.paint_canvas(interp, current_color, current_bs)
 						if current_tool == tools.SELECT:
 							select_path.append(interp)
+							selection_canvas.get_outline(select_path)
 						if current_tool == tools.ERASER:
 							current_stroke.path.append(interp)
-							action_history.append(current_stroke)
 							canvas.paint_canvas(interp, Color.TRANSPARENT, current_es)
 					last_point = lpos
+
+		if Input.is_action_pressed("space"):
+			selection_canvas.position += event.relative
 
 	#MOUSE BUTTON LOGIC
 	
@@ -169,16 +176,12 @@ func _input(event: InputEvent) -> void:
 			is_drawing = false
 			last_point = null
 			if current_stroke != null and current_stroke.path.size() > 0:
+				action_history.append(current_stroke)
 				save_stroke(current_stroke.path)
 			if current_tool == tools.SELECT and select_path.size() > 0:
 				select_path.append(select_path[0])
 				create_select(select_path)
-			else:
-				print("**********")
-				print(current_tool)
-				print(select_path)
-				print("**********")
-
+		
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("undo"):
 		print("yeah you pressed undo")
@@ -240,12 +243,12 @@ func create_select(path):
 		maxy = max(maxy, p.y)
 	var bounds = Rect2(
 		Vector2i(minx, miny),
-		Vector2i(maxx - minx, maxy - miny))
+		Vector2i(maxx - minx + 1, maxy - miny + 1))
 
-	var pos = bounds.get_center()
 	var src_img = canvas.current_layer.image
 	#Not sure if this will be needed in the long run
-	var selection_image = selection_canvas.create_new_selection(bounds.size.x, bounds.size.y)
+	
+	selection_canvas.create_new_selection(bounds.size.x, bounds.size.y)
 	
 	for x in range(bounds.position.x, bounds.position.x + bounds.size.x):
 		for y in range(bounds.position.y, bounds.position.y + bounds.size.y):
@@ -253,15 +256,26 @@ func create_select(path):
 			
 			if Geometry2D.is_point_in_polygon(point, path):
 				var color = src_img.get_pixel(x, y)
-				selection_canvas.image.set_pixel(x - bounds.position.x, y - bounds.position.y, color)
+				if color.a > 0:
+					selection_canvas.image.set_pixel(x - bounds.position.x, y - bounds.position.y, color)
 	
-	var variables = selection_canvas.get_variables()
-	selection_image = variables[0]
-	selection_tex = variables[1]
-	selection_position = pos
+	selection_canvas.update_visual()
+	
+	var local_outline: Array = []
+	for p in select_path:
+		local_outline.append(p - bounds.position)
+	selection_canvas.get_outline(local_outline)
+	
+	selection_img = selection_canvas.image
+	selection_tex = selection_canvas.tex
+	selection_position = bounds.position
 	is_selecting = true
 	selection_canvas.position = selection_position
 	
+	for point in select_path:
+		canvas.current_layer.image.set_pixel(point.x, point.y, Color.TRANSPARENT)
+	
+	ui_elements.select_prompt.visible = true
 
 func create_layer():
 	var current_frame = all_frames[frame_index]
@@ -336,6 +350,29 @@ func _on_backward_frame_button_pressed() -> void:
 
 func _on_new_folder_button_pressed() -> void:
 	create_layer()
+
+func _on_ui_elements_select_button_signal(type) -> void:
+	match type:
+		"copy":
+			#Whatever is in the selected area, duplicate it, set first selection down, bring second selection in
+			pass
+		"cut":
+			#whatever is in the area obliterate
+			pass
+		"fill":
+			#whatever is in the area flood
+			pass
+		"release":
+			#this is just putting whatever is selected where it is at
+			pass
+
+	current_tool = tools.BRUSH
+	select_path.clear()
+	is_drawing = false
+	is_selecting = false
+	selection_canvas.get_outline([])
+	selection_tex = null
+	selection_img = null
 
 #Classes
 class layers:
