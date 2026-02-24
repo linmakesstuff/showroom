@@ -28,6 +28,11 @@ enum tools {
 	ERASER,
 	SELECT,
 	FILL}
+enum select_state {
+	IDLE,
+	DRAWING,
+	FLOATING
+}
 var dirty = false
 var current_tool
 var current_bs = 3
@@ -47,9 +52,9 @@ var last_point = null
 
 #SELECTION VARIABLES
 var selection_img: Image
-var selection_position: Vector2
-var is_selecting = false
+var selection_position: Vector2i
 var selection_tex
+var selection_status
 var select_path: Array = []
 
 var copy_img
@@ -169,6 +174,8 @@ func _input(event: InputEvent) -> void:
 				current_stroke.brush_size = current_bs
 				current_stroke.color = current_color
 			if !is_drawing and current_tool == tools.SELECT:
+				if selection_status == select_state.DRAWING:
+					_on_ui_elements_select_button_signal("release")
 				is_drawing = true
 				var data = select.new()
 
@@ -268,7 +275,7 @@ func create_select(path):
 	
 	selection_img = selection_canvas.image
 	selection_tex = selection_canvas.tex
-	selection_position = bounds.position
+	selection_position = Vector2i(bounds.position)
 	is_selecting = true
 	selection_canvas.position = selection_position
 	
@@ -364,15 +371,26 @@ func _on_ui_elements_select_button_signal(type) -> void:
 			pass
 		"release":
 			#this is just putting whatever is selected where it is at
-			pass
+			is_drawing = false
+			is_selecting = false
+			
+			var re_commit = canvas.current_layer.image
+			for x in range(selection_img.get_width()):
+				for y in range(selection_img.get_height()):
+					var color = selection_img.get_pixel(x, y)
+					if color.a > 0:
+						re_commit.set_pixelv(
+							selection_position + Vector2i(x,y), color
+						)
+			canvas.current_layer.texture.set_image(canvas.current_layer.image)
 
-	current_tool = tools.BRUSH
-	select_path.clear()
-	is_drawing = false
-	is_selecting = false
-	selection_canvas.get_outline([])
-	selection_tex = null
-	selection_img = null
+			is_drawing = false
+			is_selecting = false
+			current_tool = tools.BRUSH
+			select_path.clear()
+			selection_canvas.get_outline([])
+			selection_tex = null
+			selection_img = null
 
 #Classes
 class layers:
