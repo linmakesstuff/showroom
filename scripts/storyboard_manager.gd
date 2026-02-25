@@ -54,7 +54,7 @@ var last_point = null
 var selection_img: Image
 var selection_position: Vector2i
 var selection_tex
-var selection_status
+var selection_status = select_state.IDLE
 var select_path: Array = []
 
 var copy_img
@@ -68,6 +68,9 @@ func _ready() -> void:
 	if SceneSwitcher.new_arg != null:
 		var data = load(SceneSwitcher.new_arg)
 		load_data(data)
+
+func _process(delta: float) -> void:
+	print(selection_status)
 
 func load_data(data):
 	current_tool = tools.BRUSH
@@ -133,7 +136,7 @@ func _input(event: InputEvent) -> void:
 						if current_tool == tools.BRUSH:
 							current_stroke.path.append(interp)
 							canvas.paint_canvas(interp, current_color, current_bs)
-						if current_tool == tools.SELECT:
+						if current_tool == tools.SELECT and selection_status == select_state.DRAWING:
 							select_path.append(interp)
 							selection_canvas.get_outline(select_path)
 						if current_tool == tools.ERASER:
@@ -141,8 +144,10 @@ func _input(event: InputEvent) -> void:
 							canvas.paint_canvas(interp, Color.TRANSPARENT, current_es)
 					last_point = lpos
 
-		if Input.is_action_pressed("space"):
-			selection_canvas.position += event.relative
+		if current_tool == tools.SELECT and selection_status == select_state.FLOATING:
+			if Input.is_action_pressed("space"):
+				selection_canvas.position += event.relative
+				selection_position = Vector2i(selection_canvas.position)
 
 	#MOUSE BUTTON LOGIC
 	
@@ -173,11 +178,15 @@ func _input(event: InputEvent) -> void:
 				current_stroke = stroke.new()
 				current_stroke.brush_size = current_bs
 				current_stroke.color = current_color
-			if !is_drawing and current_tool == tools.SELECT:
-				if selection_status == select_state.DRAWING:
-					_on_ui_elements_select_button_signal("release")
-				is_drawing = true
-				var data = select.new()
+
+			if current_tool == tools.SELECT:
+				match selection_status:
+					select_state.IDLE:
+						select_path.clear()
+						is_drawing = true
+						selection_status = select_state.DRAWING
+					select_state.FLOATING:
+						commit_selection()
 
 		if event.is_action_released("left_click"):
 			is_drawing = false
@@ -185,7 +194,7 @@ func _input(event: InputEvent) -> void:
 			if current_stroke != null and current_stroke.path.size() > 0:
 				action_history.append(current_stroke)
 				save_stroke(current_stroke.path)
-			if current_tool == tools.SELECT and select_path.size() > 0:
+			if current_tool == tools.SELECT and selection_status == select_state.DRAWING and select_path.size() > 0:
 				select_path.append(select_path[0])
 				create_select(select_path)
 		
@@ -237,7 +246,7 @@ func create_button(data):
 	layer_holder.add_child(new_button)
 
 func create_select(path):
-	print("create select started")
+	#Getting boundaries of selection
 	var minx = path[0].x
 	var maxx = path[0].x
 	var miny = path[0].y
@@ -252,8 +261,8 @@ func create_select(path):
 		Vector2i(minx, miny),
 		Vector2i(maxx - minx + 1, maxy - miny + 1))
 
+	#Grabbing pixels within the boundaries
 	var src_img = canvas.current_layer.image
-	#Not sure if this will be needed in the long run
 	
 	selection_canvas.create_new_selection(bounds.size.x, bounds.size.y)
 	
@@ -268,19 +277,19 @@ func create_select(path):
 	
 	selection_canvas.update_visual()
 	
+	#Creating the outline to visually represent selection
 	var local_outline: Array = []
 	for p in select_path:
 		local_outline.append(p - bounds.position)
 	selection_canvas.get_outline(local_outline)
 	
+	#Setting all selection variables to be new selected area
 	selection_img = selection_canvas.image
 	selection_tex = selection_canvas.tex
 	selection_position = Vector2i(bounds.position)
-	is_selecting = true
+	selection_status = select_state.FLOATING
 	selection_canvas.position = selection_position
-	
-	for point in select_path:
-		canvas.current_layer.image.set_pixel(point.x, point.y, Color.TRANSPARENT)
+	select_path.clear()
 	
 	ui_elements.select_prompt.visible = true
 
@@ -340,6 +349,34 @@ func change_layer(data):
 	ui_elements.current_layer_display.text = "Current: %s" % data.name
 	canvas.set_current(current_layer)
 
+func commit_selection():
+	is_drawing = false
+	selection_status = select_state.IDLE
+			
+	var re_commit = canvas.current_layer.image
+	for x in range(selection_img.get_width()):
+		for y in range(selection_img.get_height()):
+			var color = selection_img.get_pixel(x, y)
+			if color.a > 0:
+				re_commit.set_pixelv(
+					selection_position + Vector2i(x,y), color
+				)
+	
+	for point in select_path:
+		canvas.current_layer.image.set_pixel(point.x, point.y, Color.TRANSPARENT)
+	
+	canvas.current_layer.texture.set_image(canvas.current_layer.image)
+
+	selection_status = select_state.IDLE
+	current_tool = tools.BRUSH
+	select_path.clear()
+	selection_canvas.get_outline([])
+	selection_canvas.position = Vector2i(0,0)
+	selection_canvas.image.fill(Color(0,0,0,0))
+	selection_canvas.update_visual()
+	selection_tex = null
+	selection_img = null
+
 #BUTTON SIGNALS
 
 func on_layer_button_pressed(data):
@@ -369,28 +406,7 @@ func _on_ui_elements_select_button_signal(type) -> void:
 		"fill":
 			#whatever is in the area flood
 			pass
-		"release":
-			#this is just putting whatever is selected where it is at
-			is_drawing = false
-			is_selecting = false
-			
-			var re_commit = canvas.current_layer.image
-			for x in range(selection_img.get_width()):
-				for y in range(selection_img.get_height()):
-					var color = selection_img.get_pixel(x, y)
-					if color.a > 0:
-						re_commit.set_pixelv(
-							selection_position + Vector2i(x,y), color
-						)
-			canvas.current_layer.texture.set_image(canvas.current_layer.image)
 
-			is_drawing = false
-			is_selecting = false
-			current_tool = tools.BRUSH
-			select_path.clear()
-			selection_canvas.get_outline([])
-			selection_tex = null
-			selection_img = null
 
 #Classes
 class layers:
