@@ -50,7 +50,6 @@ var current_stroke
 var last_point = null
 
 #SELECTION VARIABLES
-var selection_img: Image
 var selection_position: Vector2i
 var selection_tex
 var selection_status = select_state.IDLE
@@ -147,7 +146,9 @@ func _input(event: InputEvent) -> void:
 					last_point = lpos
 
 		if current_tool == tools.SELECT and selection_status == select_state.FLOATING:
+			print("selection is right")
 			if Input.is_action_pressed("space"):
+				print("space pressed")
 				selection_canvas.position += event.relative
 				selection_position = Vector2i(selection_canvas.position)
 				selection_moved = true
@@ -214,8 +215,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event.is_action_pressed("change_brush_temp"):
 		current_tool = tools.SELECT
-	if event.is_action_pressed("ui_accept"):
-		current_tool = tools.FILL
+	#if event.is_action_pressed("ui_accept"):
+		#current_tool = tools.FILL
 
 #UNDO REDO ACTIONS
 
@@ -290,10 +291,9 @@ func create_select(path):
 				
 				var color = src_img.get_pixel(point.x, point.y)
 				if color.a > 0:
-					selection_canvas.image.set_pixel(local_x, local_y, current_color)
+					selection_canvas.image.set_pixel(local_x, local_y, color)
 					canvas.current_layer.image.set_pixel(x, y, Color.TRANSPARENT)
 				selection_mask.set_pixel(local_x, local_y, Color(1,1,1,1))
-				print(selection_mask.get_pixel(x,y))
 		
 	
 	#for x in range(bounds.size.x):
@@ -320,7 +320,6 @@ func create_select(path):
 	selection_canvas.get_outline(local_outline)
 	
 	#Setting all selection variables to be new selected area
-	selection_img = selection_canvas.image
 	selection_tex = selection_canvas.tex
 	selection_position = Vector2i(bounds.position)
 	selection_status = select_state.FLOATING
@@ -374,7 +373,6 @@ func paint_bucket_fill(start):
 		return
 	
 	if old_color == current_color:
-		canvas.current_layer.image.unlock()
 		return
 	
 	var queue: Array[Vector2i] = []
@@ -452,7 +450,6 @@ func commit_selection():
 	selection_canvas.image.fill(Color(0,0,0,0))
 	selection_canvas.update_visual()
 	selection_tex = null
-	selection_img = null
 
 	ui_elements.select_prompt.visible = false
 
@@ -512,11 +509,19 @@ func _on_ui_elements_select_button_signal(type) -> void:
 	if selection_status == select_state.FLOATING:
 		match type:
 			"copy":
-				#Whatever is in the selected area, duplicate it, set first selection down, bring second selection in
-				pass
+				var re_commit = canvas.current_layer.image
+				for x in range(selection_canvas.image.get_width()):
+					for y in range(selection_canvas.image.get_height()):
+						var color = selection_canvas.image.get_pixel(x, y)
+						if color.a > 0:
+							re_commit.set_pixelv(
+							selection_position + Vector2i(x,y), color)
+				canvas.update_canvas()
+				
+
 			"cut":
-				#whatever is in the area obliterate
-				pass
+				selection_canvas.image.fill(Color.TRANSPARENT)
+				commit_selection()
 			"fill":
 				if !selection_moved:
 					for x in range(selection_mask.get_width()):
