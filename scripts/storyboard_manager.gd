@@ -1,4 +1,4 @@
-extends Node2D
+extends Control
 
 #SIGNALS
 
@@ -7,12 +7,12 @@ extends Node2D
 @onready var canvas = $canvas
 @onready var selection_canvas = $canvas_holder/selection_sprite
 @onready var canvas_holder = $canvas_holder
-@onready var ui_elements = $control_manager/ui_elements
-@onready var layer_holder = $control_manager/ui_elements/ui_control/PanelContainer/MarginContainer/layer_holder
+@onready var ui_elements = $ui_elements
+@onready var layer_holder = $ui_elements/ui_control/PanelContainer/MarginContainer/layer_holder
 
 #SCENE SETTINGS
-var height
-var width  
+var height: int 
+var width : int
 
 var max_zoom = 1.5
 var min_zoom = 0.1
@@ -56,6 +56,7 @@ var selection_tex
 var selection_status = select_state.IDLE
 var select_path: Array = []
 var selection_moved: bool = false
+var selection_mask: Image
 
 
 var copy_img
@@ -103,6 +104,8 @@ func save_stroke(new_stroke):
 	current_layer.undos.append(new_stroke)
 
 func _input(event: InputEvent) -> void:
+	if get_viewport().gui_get_hovered_control() != null:
+		return  # Mouse is over UI, ignore canvas input
 	
 	if event is InputEventMouseMotion:
 		if event.button_mask == MOUSE_BUTTON_MASK_MIDDLE:
@@ -170,6 +173,29 @@ func _input(event: InputEvent) -> void:
 		)
 			cam.zoom = new_zoom
 	
+	
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				if !is_drawing and current_tool == tools.BRUSH:
+					select_path.clear()
+					is_drawing = true
+							
+					current_stroke = stroke.new()
+					current_stroke.brush_size = current_bs
+					current_stroke.color = current_color
+
+				if current_tool == tools.FILL:
+					var pos = canvas.to_local(get_global_mouse_position())
+					paint_bucket_fill(pos)
+
+				if current_tool == tools.SELECT:
+					match selection_status:
+						select_state.IDLE:
+							select_path.clear()
+							is_drawing = true
+							selection_status = select_state.DRAWING
+						select_state.FLOATING:
+							commit_selection()
 
 		if event.is_action_released("left_click"):
 			is_drawing = false
@@ -188,24 +214,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event.is_action_pressed("change_brush_temp"):
 		current_tool = tools.SELECT
-
-	if event.is_action_pressed("left_click"):
-		if !is_drawing and current_tool == tools.BRUSH:
-			select_path.clear()
-			is_drawing = true
-				
-			current_stroke = stroke.new()
-			current_stroke.brush_size = current_bs
-			current_stroke.color = current_color
-
-		if current_tool == tools.SELECT:
-			match selection_status:
-				select_state.IDLE:
-					select_path.clear()
-					is_drawing = true
-					selection_status = select_state.DRAWING
-				select_state.FLOATING:
-					commit_selection()
+	if event.is_action_pressed("ui_accept"):
+		current_tool = tools.FILL
 
 #UNDO REDO ACTIONS
 
@@ -264,18 +274,41 @@ func create_select(path):
 
 	#Grabbing pixels within the boundaries
 	var src_img = canvas.current_layer.image
+	selection_mask = Image.create_empty(bounds.size.x, bounds.size.y, false, Image.FORMAT_RGBA8)
+	selection_mask.fill(Color(0,0,0,0)) # start fully unselected
 	
 	selection_canvas.create_new_selection(bounds.size.x, bounds.size.y)
-	
-	for x in range(bounds.position.x, bounds.position.x + bounds.size.x):
-		for y in range(bounds.position.y, bounds.position.y + bounds.size.y):
+
+	for x in range(int(bounds.position.x), int(bounds.position.x + bounds.size.x)):
+		for y in range(int(bounds.position.y), int(bounds.position.y + bounds.size.y)):
+
 			var point = Vector2(x, y)
-			
+			var local_x = x - int(bounds.position.x)
+			var local_y = y - int(bounds.position.y)
+
 			if Geometry2D.is_point_in_polygon(point, path):
-				var color = src_img.get_pixel(x, y)
+				
+				var color = src_img.get_pixel(point.x, point.y)
 				if color.a > 0:
-					selection_canvas.image.set_pixel(x - bounds.position.x, y - bounds.position.y, color)
+					selection_canvas.image.set_pixel(local_x, local_y, current_color)
 					canvas.current_layer.image.set_pixel(x, y, Color.TRANSPARENT)
+				selection_mask.set_pixel(local_x, local_y, Color(1,1,1,1))
+				print(selection_mask.get_pixel(x,y))
+		
+	
+	#for x in range(bounds.size.x):
+		#for y in range(bounds.size.y):
+#
+			#var world_point = Vector2i(x, y)
+#
+			#print("POINT:", world_point)
+			#print("POLY FIRST:", path[0])
+			#if Geometry2D.is_point_in_polygon(world_point, path):
+				#var color = src_img.get_pixel(world_point.x, world_point.y)
+				#if color.a > 0:
+					#selection_mask.set_pixel(x, y, Color(1,1,1,1))
+					#selection_canvas.image.set_pixel(x, y, color)
+					#canvas.current_layer.image.set_pixel(world_point.x, world_point.y, Color.TRANSPARENT)
 	
 	canvas.update_canvas()
 	selection_canvas.update_visual()
@@ -306,6 +339,7 @@ func create_layer():
 	var data = layers.new()
 	data.texture = ImageTexture.new()
 	data.image = Image.create_empty(width, height, false, Image.FORMAT_RGBA8)
+	data.image.fill(Color.WHITE)
 	data.vis = true
 	data.opacity = 100.0
 	data.name = layer_name
@@ -323,14 +357,55 @@ func create_layer():
 	
 	current_layer = data
 	canvas.set_current(current_layer)
+	canvas.update_canvas()
 	ui_elements.current_layer_display.text = "Current: %s" % data.name
 	
 	create_button(data)
 
 #CHANGE STATES
 
+#INCEDIBLY SLOW IM SORRY IM WORKING ON IT
+func paint_bucket_fill(start):
+	var old_color = canvas.current_layer.image.get_pixelv(start)
+	
+	if start.x < 0 or start.x >= width:
+		return 
+	if start.y < 0 or start.y >= height:
+		return
+	
+	if old_color == current_color:
+		canvas.current_layer.image.unlock()
+		return
+	
+	var queue: Array[Vector2i] = []
+	queue.append(start)
+	
+	while queue.size() > 0:
+		var p = queue.pop_back()
+		
+		if p.x < 0 or p.x >= width:
+			continue
+		if p.y < 0 or p.y >= height:
+			continue
+		
+		if canvas.current_layer.image.get_pixelv(p) !=  old_color:
+			continue
+		
+		canvas.current_layer.image.set_pixel(p.x, p.y, current_color)
+		
+		queue.append(Vector2i(p.x + 1, p.y))
+		queue.append(Vector2i(p.x - 1, p.y))
+		queue.append(Vector2i(p.x, p.y + 1))
+		queue.append(Vector2i(p.x, p.y - 1))
+	
+	canvas.update_canvas()
+
 func load_frame(index):
 	frame_index = index
+	
+	#Clearing on frame change because i do not want to store allat
+	current_layer.undos.clear()
+	current_layer.redos.clear()
 	
 	for child in canvas_holder.get_children():
 		canvas_holder.remove_child(child)
@@ -357,15 +432,18 @@ func commit_selection():
 	is_drawing = false
 			
 	var re_commit = canvas.current_layer.image
-	for x in range(selection_img.get_width()):
-		for y in range(selection_img.get_height()):
-			var color = selection_img.get_pixel(x, y)
+	for x in range(selection_canvas.image.get_width()):
+		for y in range(selection_canvas.image.get_height()):
+			var color = selection_canvas.image.get_pixel(x, y)
 			if color.a > 0:
 				re_commit.set_pixelv(
 					selection_position + Vector2i(x,y), color
 				)
 	
 	canvas.current_layer.texture.set_image(canvas.current_layer.image)
+	canvas.update_canvas()
+
+	current_tool = tools.BRUSH
 
 	selection_status = select_state.IDLE
 	select_path.clear()
@@ -375,6 +453,8 @@ func commit_selection():
 	selection_canvas.update_visual()
 	selection_tex = null
 	selection_img = null
+
+	ui_elements.select_prompt.visible = false
 
 #BUTTON SIGNALS
 
@@ -394,10 +474,42 @@ func _on_backward_frame_button_pressed() -> void:
 func _on_new_folder_button_pressed() -> void:
 	create_layer()
 
+func _on_frame_delete_button_pressed() -> void:
+	if all_frames.size() == 1:
+		return
+	all_frames.remove_at(frame_index)
+	if frame_index > 0:
+		load_frame(frame_index - 1)
+	elif frame_index >= all_frames.size():
+		frame_index = all_frames.size() - 1
+	
+func _on_layer_delete_button_pressed() -> void:
+	if all_frames[frame_index].layers.size() <= 1:
+		return
+
+	var layer_index = all_frames[frame_index].layers.find(current_layer)
+	all_frames[frame_index].layers.remove_at(layer_index)
+	
+	for button in layer_holder.get_children():
+		if button.text == current_layer.name:
+			button.queue_free()
+	
+	if layer_index > 0:
+		layer_index -= 1
+	elif layer_index >= all_frames[frame_index].layers.size():
+		layer_index = all_frames[frame_index].layers.size() - 1
+	
+	current_layer = all_frames[frame_index].layers[layer_index]
+	change_layer(current_layer)
+
+func _on_frame_duplicate_button_2_pressed() -> void:
+	var new_frame = all_frames[frame_index]
+	all_frames.insert(frame_index, new_frame)
+	load_frame(frame_index + 1)
+
 func _on_ui_elements_select_button_signal(type) -> void:
 	print(selection_status, current_tool)
 	if selection_status == select_state.FLOATING:
-		print("match statement reached")
 		match type:
 			"copy":
 				#Whatever is in the selected area, duplicate it, set first selection down, bring second selection in
@@ -406,16 +518,12 @@ func _on_ui_elements_select_button_signal(type) -> void:
 				#whatever is in the area obliterate
 				pass
 			"fill":
-				print("fill option selected")
 				if !selection_moved:
-					var changed_pixels = []
-					
-					for x in range(selection_img.get_width()):
-						for y in range(selection_img.get_height()):
-							var old = selection_img.get_pixel(x, y)
-							
-							selection_img.set_pixel(x, y, current_color)
-					selection_canvas.update_visual()
+					for x in range(selection_mask.get_width()):
+						for y in range(selection_mask.get_height()):
+							if selection_mask.get_pixel(x,y).a > 0 :
+								selection_canvas.image.set_pixel(x,y, current_color)
+					commit_selection()
 			_:
 				print("failed")
 
@@ -430,26 +538,31 @@ class layers:
 	var undos: Array
 	var redos: Array
 	var sprite: Sprite2D
+class frame:
+	var layers: Array = []
+#ALL OF THESE GOT UNDO FUNCTIONS
 class stroke:
 	var path: PackedVector2Array
 	var color: Color
 	var brush_size: float
 	func _init():
 		path = PackedVector2Array()
-class frame:
-	var layers: Array = []
-class select:
-	var select_path: Array = []
-class cut:
+class selection_cut:
 	var area : PackedVector2Array
 	var color: Color
-class copy:
+class selection_copy:
 	var idkwhatillneedinhere
-class bucker_fill:
+class selection_fill:
+	var area: PackedVector2Array
 	var color: Color
-class move_selection:
-	var original_pos
-	var selected_area
+class selection_move:
+	var original_pos: Vector2i
+	var new_pos: Vector2i
+	var selected_area: PackedVector2Array
+class bucket_fill:
+	var area: PackedVector2Array
+	var color: Color
+	
 
 #Camera and action input. > Self
 #Drawing and Visual rep > In the canvas sprite2d
